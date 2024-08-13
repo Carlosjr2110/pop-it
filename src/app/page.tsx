@@ -32,19 +32,20 @@ const App = () => {
   const [isTopPressed, setIsTopPressed] = useState<boolean>(false);
   const [init, setInit] = useState<boolean>(false);
   const [isAdvanceButtonActive, setIsAdvanceButtonActive] = useState<boolean>(false);
+  const [isAdvanceButton1Pressed, setIsAdvanceButton1Pressed] = useState<boolean>(false);
+  const [isAdvanceButton2Pressed, setIsAdvanceButton2Pressed] = useState<boolean>(false);
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [timeRemaining, setTimeRemaining] = useState<number>(5);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [modalMessage, setModalMessage] = useState<string>('');
   const modalRef = useRef<HTMLDivElement>(null);
 
+  
   const playPopitSound = () => {
     const sound = new Audio('/popit-sound.wav');
     sound.playbackRate = 4; // Ajuste a taxa de reprodução aqui (2 para 2x a velocidade normal)
     sound.play();
   };
-
-
 
   const handleGameInit = () => {
     setPhase(1);
@@ -53,6 +54,8 @@ const App = () => {
     setLitButtons(new Set());
     setIsTopPressed(false);
     setIsAdvanceButtonActive(false);
+    setIsAdvanceButton1Pressed(false);
+    setIsAdvanceButton2Pressed(false);
     setInit(true);
   };
 
@@ -63,6 +66,8 @@ const App = () => {
     setLitButtons(new Set());
     setIsTopPressed(false);
     setIsAdvanceButtonActive(false);
+    setIsAdvanceButton1Pressed(false);
+    setIsAdvanceButton2Pressed(false);
     setInit(false);
     if (timerInterval) clearInterval(timerInterval);
     setTimeRemaining(0);
@@ -99,7 +104,7 @@ const App = () => {
   }, [litButtons, pressedButtons]);
 
   useEffect(() => {
-    if (isTopPressed && isAdvanceButtonActive) {
+    if (isAdvanceButton1Pressed && isAdvanceButton2Pressed && isAdvanceButtonActive) {
       const timer = setTimeout(() => {
         setPhase(prev => {
           const nextPhase = prev < 20 ? prev + 1 : 1;
@@ -109,8 +114,9 @@ const App = () => {
           setLitButtons(newLitButtons);
           setPressedButtons(new Set());
           setIsTopPressed(false);
-          setIsAdvanceButtonActive(false);
-          playPopitSound(); // Toca o som ao avançar de fase
+          setIsAdvanceButton1Pressed(false);
+          setIsAdvanceButton2Pressed(false);
+          playPopitSound(); 
           setTimeRemaining(3); // Reinicia o tempo restante para 3 segundos
           if (timerInterval) clearInterval(timerInterval);
           const intervalId = setInterval(() => {
@@ -128,36 +134,36 @@ const App = () => {
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [isTopPressed, isAdvanceButtonActive]);
+  }, [isAdvanceButton1Pressed, isAdvanceButton2Pressed, isAdvanceButtonActive]);
 
   useEffect(() => {
-  if (phase === 21) {
-    setIsModalVisible(true);
-    setModalMessage('Ganhou! Você completou todas as fases!');
-    resetGame()
-  }
-}, [phase]);
-
-useEffect(() => {
-  if (timeRemaining === 0) {
-    setIsModalVisible(true);
-    setModalMessage('Perdeu!! Tempo esgotado!!');
-    resetGame()
-  }
-}, [timeRemaining]);
-
-useEffect(() => {
-  const handleClickOutside = (event: MouseEvent) => {
-    if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-      setIsModalVisible(false);
+    if (phase === 21) {
+      setIsModalVisible(true);
+      setModalMessage('Ganhou! Você completou todas as fases!');
+      resetGame()
     }
-  };
+  }, [phase]);
 
-  document.addEventListener('mousedown', handleClickOutside);
-  return () => {
-    document.removeEventListener('mousedown', handleClickOutside);
-  };
-}, []);
+  useEffect(() => {
+    if (timeRemaining === 0) {
+      setIsModalVisible(true);
+      setModalMessage('Perdeu!! Tempo esgotado!!');
+      resetGame()
+    }
+  }, [timeRemaining]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setIsModalVisible(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
@@ -185,7 +191,7 @@ useEffect(() => {
   };
 
   const advancePhase = () => {
-    if (isAdvanceButtonActive && timeRemaining > 0 ) {
+    if (isAdvanceButton1Pressed && isAdvanceButton2Pressed && isAdvanceButtonActive && timeRemaining > 0 ) {
       setPhase(prev => {
         const nextPhase = prev < 20 ? prev + 1 : 1;
         const count = getButtonsToLight(nextPhase);
@@ -194,7 +200,8 @@ useEffect(() => {
         setLitButtons(newLitButtons);
         setPressedButtons(new Set());
         setIsTopPressed(false);
-        setIsAdvanceButtonActive(false);
+        setIsAdvanceButton1Pressed(false);
+        setIsAdvanceButton2Pressed(false);
         playPopitSound(); 
         setTimeRemaining(4); 
         if (timerInterval) clearInterval(timerInterval);
@@ -212,7 +219,6 @@ useEffect(() => {
       });
     }
   };
-
 
   return (
     <div className="relative w-full h-screen">
@@ -242,15 +248,15 @@ useEffect(() => {
     </div>
   </div>
 </header>
-      <div className="flex flex-col items-center justify-center h-screen bg-gray-600">
+      <div className="flex flex-col items-center justify-center pt-24 h-screen bg-gray-600">
       <div className="flex relative items-center">
       <button
-          className={`relative mb-24 px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={advancePhase}
-        >
+          className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
+          onClick={() => setIsAdvanceButton1Pressed(!isAdvanceButton1Pressed)}
+          >
           <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
         </button>
-        <div className="mb-24 transform rotate-90 absolute ml-40 flex flex-col text-white">
+        <div className="transform rotate-90 absolute ml-40 flex flex-col text-white">
         <div className="">Tempo:</div>
         <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 shadow-lg">
                 {timeRemaining}
@@ -258,7 +264,7 @@ useEffect(() => {
         </div>
 
         </div>
-        <div className="p-4 w-[400px] bg-slate-300 border-2 border-gray-200 rounded-lg shadow-lg transform rotate-90">
+        <div className="mt-24 mb-24 p-4 w-[400px] bg-slate-300 border-2 border-gray-200 rounded-lg shadow-lg transform rotate-90">
           <div className="flex justify-center mb-2">
             <div className="grid grid-cols-4 gap-2">
               {poppedStates.slice(0, 4).map((isPopped, index) => (
@@ -341,15 +347,15 @@ useEffect(() => {
         <div className="flex relative items-center">
         
         <button
-          className={`relative mt-24 px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={advancePhase}
-        >
+          className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
+          onClick={() => setIsAdvanceButton2Pressed(!isAdvanceButton2Pressed)}
+          >
           <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
         </button>
-        <div className="mt-24 absolute transform rotate-90 ml-40 flex flex-col text-white">
+        <div className=" absolute transform rotate-90 ml-40 flex flex-col text-white">
         <div className="flex items-center justify-center">Fase:</div>
         <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 pr-5 pl-5 shadow-lg">
-                {timeRemaining}
+                {phase}
         </div>          
         </div>
         </div>
