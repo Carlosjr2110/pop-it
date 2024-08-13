@@ -1,113 +1,362 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useEffect, useRef, useState } from "react";
+import logo from '../../public/LogoDev.png';
+import { setRequestMeta } from "next/dist/server/request-meta";
+
+const totalButtons = 13;
+
+
+const getButtonsToLight = (phase: number): number => {
+  if (phase >= 1 && phase <= 5) return 3;
+  if (phase >= 6 && phase <= 10) return 4;
+  if (phase >= 11 && phase <= 15) return 5;
+  if (phase >= 16 && phase <= 20) return 6;
+  return 3; 
+};
+
+const getRandomIndexes = (count: number): number[] => {
+  const indexes = new Set<number>();
+  while (indexes.size < count) {
+    const randomIndex = Math.floor(Math.random() * totalButtons);
+    indexes.add(randomIndex);
+  }
+  return Array.from(indexes);
+};
+
+const App = () => {
+  const [poppedStates, setPoppedStates] = useState<boolean[]>(Array(totalButtons).fill(false));
+  const [phase, setPhase] = useState<number>(1);
+  const [litButtons, setLitButtons] = useState<Set<number>>(new Set());
+  const [pressedButtons, setPressedButtons] = useState<Set<number>>(new Set());
+  const [isTopPressed, setIsTopPressed] = useState<boolean>(false);
+  const [init, setInit] = useState<boolean>(false);
+  const [isAdvanceButtonActive, setIsAdvanceButtonActive] = useState<boolean>(false);
+  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
+  const [modalMessage, setModalMessage] = useState<string>('');
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  const playPopitSound = () => {
+    const sound = new Audio('/popit-sound.wav');
+    sound.playbackRate = 4; // Ajuste a taxa de reprodução aqui (2 para 2x a velocidade normal)
+    sound.play();
+  };
+
+
+
+  const handleGameInit = () => {
+    setPhase(1);
+    setPoppedStates(Array(totalButtons).fill(false));
+    setPressedButtons(new Set());
+    setLitButtons(new Set());
+    setIsTopPressed(false);
+    setIsAdvanceButtonActive(false);
+    setInit(true);
+  };
+
+  const resetGame = () => {
+    setPhase(1);
+    setPoppedStates(Array(totalButtons).fill(false));
+    setPressedButtons(new Set());
+    setLitButtons(new Set());
+    setIsTopPressed(false);
+    setIsAdvanceButtonActive(false);
+    setInit(false);
+    if (timerInterval) clearInterval(timerInterval);
+    setTimeRemaining(0);
+  };
+
+  useEffect(() => {
+    if (init) {
+      const count = getButtonsToLight(phase);
+      const newLitButtons = new Set(getRandomIndexes(count));
+      setLitButtons(newLitButtons);
+      playPopitSound(); 
+      setTimeRemaining(5); 
+      if (timerInterval) clearInterval(timerInterval);
+      const intervalId = setInterval(() => {
+        setTimeRemaining(prevTime => {
+          if (prevTime <= 1) {
+            clearInterval(intervalId);
+            return 0;
+          }
+          return prevTime - 1;
+        });
+      }, 1000);
+      setTimerInterval(intervalId);
+    }
+  }, [phase, init]);
+
+  useEffect(() => {
+    const allLitButtonsPressed = Array.from(litButtons).every(index => pressedButtons.has(index));
+    if (allLitButtonsPressed) {
+      setIsAdvanceButtonActive(true);
+    } else {
+      setIsAdvanceButtonActive(false);
+    }
+  }, [litButtons, pressedButtons]);
+
+  useEffect(() => {
+    if (isTopPressed && isAdvanceButtonActive) {
+      const timer = setTimeout(() => {
+        setPhase(prev => {
+          const nextPhase = prev < 20 ? prev + 1 : 1;
+          const count = getButtonsToLight(nextPhase);
+          const newLitButtons = new Set(getRandomIndexes(count));
+          setPoppedStates(Array(totalButtons).fill(false));
+          setLitButtons(newLitButtons);
+          setPressedButtons(new Set());
+          setIsTopPressed(false);
+          setIsAdvanceButtonActive(false);
+          playPopitSound(); // Toca o som ao avançar de fase
+          setTimeRemaining(3); // Reinicia o tempo restante para 3 segundos
+          if (timerInterval) clearInterval(timerInterval);
+          const intervalId = setInterval(() => {
+            setTimeRemaining(prevTime => {
+              if (prevTime <= 1) {
+                clearInterval(intervalId);
+                return 0;
+              }
+              return prevTime - 1;
+            });
+          }, 1000);
+          setTimerInterval(intervalId);
+          return nextPhase;
+        });
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isTopPressed, isAdvanceButtonActive]);
+
+  useEffect(() => {
+  if (phase === 21) {
+    setIsModalVisible(true);
+    setModalMessage('Ganhou! Você completou todas as fases!');
+    resetGame()
+  }
+}, [phase]);
+
+useEffect(() => {
+  if (timeRemaining === 0) {
+    setIsModalVisible(true);
+    setModalMessage('Perdeu!! Tempo esgotado!!');
+    resetGame()
+  }
+}, [timeRemaining]);
+
+useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      setIsModalVisible(false);
+    }
+  };
+
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+}, []);
+
+  const togglePop = (index: number) => {
+    if (!litButtons.has(index)) {
+      setIsModalVisible(true);
+      setModalMessage('Você pressionou um pop-it não aceso!');
+      resetGame()
+      return;
+    }
+    
+    setPoppedStates(prevStates =>
+      prevStates.map((state, i) => (i === index ? !state : state))
+    );
+    setPressedButtons(prevButtons => {
+      const newButtons = new Set(prevButtons);
+      if (newButtons.has(index)) {
+        newButtons.delete(index);
+      } else {
+        newButtons.add(index);
+      }
+      return newButtons;
+    });
+    if (litButtons.has(index)) {
+      playPopitSound(); // Reproduza o som ao clicar no pop-it
+    }
+  };
+
+  const advancePhase = () => {
+    if (isAdvanceButtonActive && timeRemaining > 0 ) {
+      setPhase(prev => {
+        const nextPhase = prev < 20 ? prev + 1 : 1;
+        const count = getButtonsToLight(nextPhase);
+        const newLitButtons = new Set(getRandomIndexes(count));
+        setPoppedStates(Array(totalButtons).fill(false));
+        setLitButtons(newLitButtons);
+        setPressedButtons(new Set());
+        setIsTopPressed(false);
+        setIsAdvanceButtonActive(false);
+        playPopitSound(); 
+        setTimeRemaining(4); 
+        if (timerInterval) clearInterval(timerInterval);
+        const intervalId = setInterval(() => {
+          setTimeRemaining(prevTime => {
+            if (prevTime <= 1) {
+              clearInterval(intervalId);
+              return 0;
+            }
+            return prevTime - 1;
+          });
+        }, 1000);
+        setTimerInterval(intervalId);
+        return nextPhase;
+      });
+    }
+  };
+
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="relative w-full h-screen">
+    
+    {isModalVisible && (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50">
+        <div className="bg-rose-300 transform rotate-90 p-4 rounded-lg shadow-lg">
+        <div
+            ref={modalRef}
+            className="bg-rose-200 p-4 rounded-lg shadow-lg"
           >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+            <h2 className="text-lg font-semibold">{modalMessage}</h2>
+          </div>
+        </div>
+        </div>
+      )}
+                
+  <header className="absolute top-0 right-0 bg-gray-600 w-full flex flex-col items-center space-y-4 p-4">
+  <div className='text-white text-sm font-semibold mb-2'>
+    Pop-it Digital
+  </div>
+  <div className='flex items-center space-x-2 text-white'>
+    <button onClick={resetGame} className="bg-red-500 transform rotate-90 rounded-md h-8 w-16">Resetar</button>
+    <button onClick={handleGameInit} className="bg-blue-500 transform rotate-90 rounded-md h-8 w-16">Iniciar</button>
+    <div className="w-6 h-6">
+      <img src={logo.src} alt="Logo" className="rounded-md transform rotate-90" />
+    </div>
+  </div>
+</header>
+      <div className="flex flex-col items-center justify-center h-screen bg-gray-600">
+      <div className="flex relative items-center">
+      <button
+          className={`relative mb-24 px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
+          onClick={advancePhase}
+        >
+          <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
+        </button>
+        <div className="mb-24 transform rotate-90 absolute ml-40 flex flex-col text-white">
+        <div className="">Tempo:</div>
+        <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 shadow-lg">
+                {timeRemaining}
+              </div>        
+        </div>
+
+        </div>
+        <div className="p-4 w-[400px] bg-slate-300 border-2 border-gray-200 rounded-lg shadow-lg transform rotate-90">
+          <div className="flex justify-center mb-2">
+            <div className="grid grid-cols-4 gap-2">
+              {poppedStates.slice(0, 4).map((isPopped, index) => (
+                <button
+                  key={index}
+                  onClick={() => togglePop(index)}
+                  className={`w-16 h-16 rounded-full transition-transform duration-300 ${
+                    isPopped
+                      ? 'bg-cyan-500 shadow-inner'
+                      : 'bg-cyan-200 shadow-lg border-4 border-double border-cyan-400'
+                  } ${!isPopped ? 'hover:scale-105' : ''} relative ${
+                    litButtons.has(index) && !isPopped ? 'bg-rose-400 animate-pulse border-4' : ''
+                  }`}
+                >
+                  <div
+                    className={`w-full h-full rounded-full transition-transform duration-200 transform ${
+                      isPopped ? 'translate-y-2 scale-95' : '-translate-y-2'
+                    }`}
+                  />
+                  {!isPopped && (
+                    <div className="absolute inset-0 w-full h-full rounded-full border-2 border-gray-300"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-center mb-2">
+            <div className="grid grid-cols-5 gap-2">
+              {poppedStates.slice(4, 9).map((isPopped, index) => (
+                <button
+                  key={index + 4}
+                  onClick={() => togglePop(index + 4)}
+                  className={`w-16 h-16 rounded-full transition-transform duration-300 ${
+                    isPopped
+                      ? 'bg-cyan-500 shadow-inner'
+                      : 'bg-cyan-200 shadow-lg border-4 border-double border-cyan-400'
+                  } ${!isPopped ? 'hover:scale-105' : ''} relative ${
+                    litButtons.has(index + 4) && !isPopped ? 'bg-rose-400 animate-pulse border-4' : ''
+                  }`}
+                >
+                  <div
+                    className={`w-full h-full rounded-full transition-transform duration-200 transform ${
+                      isPopped ? 'translate-y-2 scale-95' : '-translate-y-2'
+                    }`}
+                  />
+                  {!isPopped && (
+                    <div className="absolute inset-0 w-full h-full rounded-full border-2 border-gray-300"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <div className="grid grid-cols-4 gap-2">
+              {poppedStates.slice(9, 13).map((isPopped, index) => (
+                <button
+                  key={index + 9}
+                  onClick={() => togglePop(index + 9)}
+                  className={`w-16 h-16 rounded-full transition-transform duration-300 ${
+                    isPopped
+                      ? 'bg-cyan-500 shadow-inner'
+                      : 'bg-cyan-200 shadow-lg border-4 border-double border-cyan-400'
+                  } ${!isPopped ? 'hover:scale-105' : ''} relative ${
+                    litButtons.has(index + 9) && !isPopped ? 'bg-rose-400 animate-pulse border-4' : ''
+                  }`}
+                >
+                  <div
+                    className={`w-full h-full rounded-full transition-transform duration-200 transform ${
+                      isPopped ? 'translate-y-2 scale-95' : '-translate-y-2'
+                    }`}
+                  />
+                  {!isPopped && (
+                    <div className="absolute inset-0 w-full h-full rounded-full border-2 border-gray-300"></div>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex relative items-center">
+        
+        <button
+          className={`relative mt-24 px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
+          onClick={advancePhase}
+        >
+          <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
+        </button>
+        <div className="mt-24 absolute transform rotate-90 ml-40 flex flex-col text-white">
+        <div className="flex items-center justify-center">Fase:</div>
+        <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 pr-5 pl-5 shadow-lg">
+                {timeRemaining}
+        </div>          
+        </div>
         </div>
       </div>
-
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      
+    </div>
   );
-}
+};
+
+export default App

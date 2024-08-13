@@ -31,3 +31,13 @@ body {
     text-wrap: balance;
   }
 }
+
+@keyframes pulse {
+  70% {
+      opacity: .4;
+  }
+}
+
+.animate-pulse {
+  animation: pulse cubic-bezier(0.165, 0.84, 0.44, 0.5) cubic-bezier(0.4, 0, 0.6, 0.5) infinite; /* Duração alterada para 1s */
+}
