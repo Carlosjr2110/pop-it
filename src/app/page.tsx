@@ -31,8 +31,8 @@ const App = () => {
   const [isTopPressed, setIsTopPressed] = useState<boolean>(false);
   const [init, setInit] = useState<boolean>(false);
   const [isAdvanceButtonActive, setIsAdvanceButtonActive] = useState<boolean>(false);
-  const [isAdvanceButton1Pressed, setIsAdvanceButton1Pressed] = useState<boolean>(false);
-  const [isAdvanceButton2Pressed, setIsAdvanceButton2Pressed] = useState<boolean>(false);
+  const [button1Pressed, setButton1Pressed] = useState<boolean>(false);
+  const [button2Pressed, setButton2Pressed] = useState<boolean>(false);
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
   const [timeRemaining, setTimeRemaining] = useState<number>(5);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
@@ -52,8 +52,8 @@ const App = () => {
     setPoppedStates(Array(totalButtons).fill(false));
     setPressedButtons(new Set());
     setLitButtons(new Set());
-    setIsAdvanceButton1Pressed(false);
-    setIsAdvanceButton2Pressed(false);
+    setButton1Pressed(false);
+    setButton2Pressed(false);
     setTimeRemaining(5);
     setIsModalVisible(false);
   };
@@ -64,8 +64,8 @@ const App = () => {
     setPoppedStates(Array(totalButtons).fill(false));
     setPressedButtons(new Set());
     setLitButtons(new Set());
-    setIsAdvanceButton1Pressed(false);
-    setIsAdvanceButton2Pressed(false);
+    setButton1Pressed(false);
+    setButton2Pressed(false);
     setTimeRemaining(5);
     if (timerInterval) clearInterval(timerInterval);
   };
@@ -113,38 +113,36 @@ const App = () => {
   }, [litButtons, pressedButtons]);
 
   useEffect(() => {
-    if (isAdvanceButton1Pressed && isAdvanceButton2Pressed && isAdvanceButtonActive && timeRemaining > 0) {
-      const timer = setTimeout(() => {
-        setPhase(prev => {
-          const nextPhase = prev < 20 ? prev + 1 : 1;
-          const count = getButtonsToLight(nextPhase);
-          const newLitButtons = new Set(getRandomIndexes(count));
-          setPoppedStates(Array(totalButtons).fill(false));
-          setLitButtons(newLitButtons);
-          setPressedButtons(new Set());
-          playPopitSound();
-          setTimeRemaining(4); 
-          
-          if (timerInterval) clearInterval(timerInterval);
-  
-          const intervalId = setInterval(() => {
-            setTimeRemaining(prevTime => {
-              if (prevTime <= 1) {
-                clearInterval(intervalId);
-                return 0;
-              }
-              return prevTime - 1;
-            });
-          }, 1000);
-  
-          setTimerInterval(intervalId);
-          return nextPhase;
-        });
-      }, 2000);
-  
-      return () => clearTimeout(timer);
+    if (button1Pressed && button2Pressed) {
+      handleAdvanceButtonClick();
+      setButton1Pressed(false);
+      setButton2Pressed(false);
     }
-  }, [isAdvanceButton1Pressed, isAdvanceButton2Pressed, isAdvanceButtonActive, timeRemaining]);
+  }, [button1Pressed, button2Pressed]);
+
+  const handleAdvanceButtonClick = () => {
+    if (isAdvanceButtonActive) {
+      setPhase(prev => {
+        const nextPhase = prev < 20 ? prev + 1 : 1;
+        const count = getButtonsToLight(nextPhase);
+        const newLitButtons = new Set(getRandomIndexes(count));
+        setPoppedStates(Array(totalButtons).fill(false));
+        setLitButtons(newLitButtons);
+        setPressedButtons(new Set());
+        playPopitSound();
+        setTimeRemaining(5);
+        return nextPhase;
+      });
+    }
+  };
+
+  const handleButton1Click = () => {
+    setButton1Pressed(true);
+  };
+
+  const handleButton2Click = () => {
+    setButton2Pressed(true);
+  };
 
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
@@ -189,6 +187,7 @@ const App = () => {
     setIsModalVisible(false);
   };
 
+
   return (
     <div className="relative w-full h-screen">
     {isModalVisible && (
@@ -208,7 +207,6 @@ const App = () => {
         </div>
       </div>
     )}
-
                 
                 <header className="fixed top-8 w-full bg-gray-600 flex items-center justify-center p-4 z-50">
         <div className="flex items-center space-x-2 text-white">
@@ -216,8 +214,8 @@ const App = () => {
           <button onClick={handleGameInit} className="bg-blue-500 transform rotate-90 rounded-md h-8 w-16">Iniciar</button>
           <div className="flex items-center space-x-2">
             <div className='text-white transform rotate-90 text-sm font-semibold'>
-            <span>Pop-it</span>
-            <span>Digital</span>            
+            Pop-it<br />
+            Digital           
             </div>
             <img src={logo.src} alt="Logo" className="w-8 h-8 rounded-md transform rotate-90" />
           </div>
@@ -227,7 +225,7 @@ const App = () => {
       <div className="flex relative items-center">
       <button
           className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={() => setIsAdvanceButton1Pressed(prev => !prev)}
+          onClick={handleButton1Click}
           >
           <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
         </button>
@@ -323,7 +321,7 @@ const App = () => {
         
         <button
           className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={() => setIsAdvanceButton2Pressed(prev => !prev)}
+          onClick={handleButton2Click}
           >
           <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
         </button>
