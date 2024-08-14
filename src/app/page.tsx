@@ -124,7 +124,9 @@ const App = () => {
           setPressedButtons(new Set());
           playPopitSound();
           setTimeRemaining(4); 
+          
           if (timerInterval) clearInterval(timerInterval);
+  
           const intervalId = setInterval(() => {
             setTimeRemaining(prevTime => {
               if (prevTime <= 1) {
@@ -134,13 +136,15 @@ const App = () => {
               return prevTime - 1;
             });
           }, 1000);
+  
           setTimerInterval(intervalId);
           return nextPhase;
         });
       }, 2000);
+  
       return () => clearTimeout(timer);
     }
-  }, [isAdvanceButton1Pressed, isAdvanceButton2Pressed, isAdvanceButtonActive]);
+  }, [isAdvanceButton1Pressed, isAdvanceButton2Pressed, isAdvanceButtonActive, timeRemaining]);
 
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
@@ -212,7 +216,8 @@ const App = () => {
           <button onClick={handleGameInit} className="bg-blue-500 transform rotate-90 rounded-md h-8 w-16">Iniciar</button>
           <div className="flex items-center space-x-2">
             <div className='text-white transform rotate-90 text-sm font-semibold'>
-              Pop-it Digital
+            <span>Pop-it</span>
+            <span>Digital</span>            
             </div>
             <img src={logo.src} alt="Logo" className="w-8 h-8 rounded-md transform rotate-90" />
           </div>
@@ -222,7 +227,7 @@ const App = () => {
       <div className="flex relative items-center">
       <button
           className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={() => setIsAdvanceButton1Pressed(!isAdvanceButton1Pressed)}
+          onClick={() => setIsAdvanceButton1Pressed(prev => !prev)}
           >
           <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
         </button>
@@ -318,7 +323,7 @@ const App = () => {
         
         <button
           className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={() => setIsAdvanceButton2Pressed(!isAdvanceButton2Pressed)}
+          onClick={() => setIsAdvanceButton2Pressed(prev => !prev)}
           >
           <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
         </button>
