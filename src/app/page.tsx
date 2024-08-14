@@ -221,7 +221,7 @@ const App = () => {
           </div>
         </div>
       </header>
-      <div className="flex flex-col  items-center justify-center h-screen bg-gray-600">
+      <div className="flex flex-col pt-8  items-center justify-center h-screen bg-gray-600">
       <div className="flex relative items-center">
       <button
           className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
