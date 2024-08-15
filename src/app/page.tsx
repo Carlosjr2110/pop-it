@@ -115,8 +115,18 @@ const App = () => {
     setIsAdvanceButtonActive(allLitButtonsPressed);
   }, [litButtons, pressedButtons]);
 
+  const handleButtonMouseDown = (buttonNumber: number) => {
+    if (buttonNumber === 1) {
+      setButton1Pressed(true);
+    } else if (buttonNumber === 2) {
+      setButton2Pressed(true);
+    }
+    handleAdvanceButtonClick();
+  };
+
+
   const handleAdvanceButtonClick = () => {
-    if (button1Pressed && button2Pressed && isAdvanceButtonActive && !phaseAdvanced) {
+    if (button1Pressed || button2Pressed && isAdvanceButtonActive && !phaseAdvanced && init) {
       setPhase(prev => {
         const nextPhase = prev < 20 ? prev + 1 : 1;
         const count = getButtonsToLight(nextPhase);
@@ -132,15 +142,7 @@ const App = () => {
     }
   };
 
-  const handleButtonMouseDown = (buttonNumber: number) => {
-    if (buttonNumber === 1) {
-      setButton1Pressed(true);
-    } else if (buttonNumber === 2) {
-      setButton2Pressed(true);
-    }
-    handleAdvanceButtonClick();
-  };
-
+  
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
       setIsModalVisible(true);
