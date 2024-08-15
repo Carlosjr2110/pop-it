@@ -37,6 +37,9 @@ const App = () => {
   const [timeRemaining, setTimeRemaining] = useState<number>(5);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [modalMessage, setModalMessage] = useState<string>('');
+  const [canAdvance, setCanAdvance] = useState<boolean>(false);
+
+  
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackdropRef = useRef<HTMLDivElement>(null);
 
@@ -114,14 +117,14 @@ const App = () => {
 
   useEffect(() => {
     if (button1Pressed && button2Pressed) {
-      handleAdvanceButtonClick();
-      setButton1Pressed(false);
-      setButton2Pressed(false);
+      setCanAdvance(true);
+    } else {
+      setCanAdvance(false);
     }
   }, [button1Pressed, button2Pressed]);
 
   const handleAdvanceButtonClick = () => {
-    if (isAdvanceButtonActive) {
+    if (canAdvance) {
       setPhase(prev => {
         const nextPhase = prev < 20 ? prev + 1 : 1;
         const count = getButtonsToLight(nextPhase);
@@ -136,13 +139,26 @@ const App = () => {
     }
   };
 
-  const handleButton1Click = () => {
-    setButton1Pressed(true);
+  const handleButtonMouseDown = (buttonNumber: number) => {
+    if (buttonNumber === 1) {
+      setButton1Pressed(true);
+    } else if (buttonNumber === 2) {
+      setButton2Pressed(true);
+    }
   };
 
-  const handleButton2Click = () => {
-    setButton2Pressed(true);
+  const handleButtonMouseUp = (buttonNumber: number) => {
+    if (buttonNumber === 1) {
+      setButton1Pressed(false);
+    } else if (buttonNumber === 2) {
+      setButton2Pressed(false);
+    }
+    // Check if both buttons are released
+    if (!button1Pressed && !button2Pressed) {
+      handleAdvanceButtonClick();
+    }
   };
+
 
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
@@ -189,54 +205,49 @@ const App = () => {
 
 
   return (
-    <div className="relative w-full h-screen">
-    {isModalVisible && (
-       <div
-       ref={modalBackdropRef}
-       onClick={handleBackdropClick}
-       className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50"
-     >
-       <div
-         ref={modalRef}
-         className="bg-rose-300 transform rotate-90 p-4 rounded-lg shadow-lg"
-         onClick={(e) => e.stopPropagation()}
-       >
-          <div className="bg-rose-200 p-4 rounded-lg shadow-lg">
-            <h2 className="text-lg font-semibold">{modalMessage}</h2>
+    <div className="w-full h-screen bg-gray-600 flex flex-col items-center justify-center">
+      {isModalVisible && (
+        <div
+          ref={modalBackdropRef}
+          onClick={handleBackdropClick}
+          className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 z-50"
+        >
+          <div
+            ref={modalRef}
+            className="bg-rose-300 transform rotate-90 p-4 rounded-lg shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-rose-200 p-4 rounded-lg shadow-lg">
+              <h2 className="text-lg font-semibold">{modalMessage}</h2>
+            </div>
           </div>
+        </div>
+      )}
+  
+  <div className="absolute text-slate-300 right-[-30px] top-[300px] flex flex-col items-center justify-center space-y-14 ">
+  <img src={logo.src} alt="Logo" className="w-8 h-8 rounded-md transform rotate-90" />
+        <div className=" transform rotate-90 text-lg font-semibold mt-2">
+          Pop-it Digital
         </div>
       </div>
-    )}
-                
-                <header className="fixed top-8 w-full bg-gray-600 flex items-center justify-center p-4 z-50">
-        <div className="flex items-center space-x-2 text-white">
-          <button onClick={resetGame} className="bg-red-500 transform rotate-90 rounded-md h-8 w-16">Resetar</button>
-          <button onClick={handleGameInit} className="bg-blue-500 transform rotate-90 rounded-md h-8 w-16">Iniciar</button>
-          <div className="flex items-center space-x-2">
-            <div className='text-white transform rotate-90 text-sm font-semibold'>
-            Pop-it<br />
-            Digital           
+  
+      <div className="flex flex-col items-center justify-center">
+        <div className="flex relative items-center">
+          <button
+            className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
+            onTouchStart={() => handleButtonMouseDown(1)}
+            onTouchEnd={() => handleButtonMouseUp(1)}
+          >
+            <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
+          </button>
+          <div className="transform rotate-90 absolute ml-40 flex flex-col text-white">
+            <div>Tempo:</div>
+            <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 shadow-lg">
+              {timeRemaining}
             </div>
-            <img src={logo.src} alt="Logo" className="w-8 h-8 rounded-md transform rotate-90" />
           </div>
         </div>
-      </header>
-      <div className="flex flex-col pt-8  items-center justify-center h-screen bg-gray-600">
-      <div className="flex relative items-center">
-      <button
-          className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={handleButton1Click}
-          >
-          <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
-        </button>
-        <div className="transform rotate-90 absolute ml-40 flex flex-col text-white">
-        <div className="">Tempo:</div>
-        <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 shadow-lg">
-                {timeRemaining}
-              </div>        
-        </div>
-
-        </div>
+  
         <div className="mt-24 mb-24 p-4 w-[400px] bg-slate-300 border-2 border-gray-200 rounded-lg shadow-lg transform rotate-90">
           <div className="flex justify-center mb-2">
             <div className="grid grid-cols-4 gap-2">
@@ -317,23 +328,28 @@ const App = () => {
             </div>
           </div>
         </div>
-        <div className="flex relative items-center">
-        
-        <button
-          className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-          onClick={handleButton2Click}
+  
+        <div className="flex relative items-center mb-8">
+          <button
+            className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
+            onTouchStart={() => handleButtonMouseDown(2)}
+            onTouchEnd={() => handleButtonMouseUp(2)}
           >
-          <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
-        </button>
-        <div className=" absolute transform rotate-90 ml-40 flex flex-col text-white">
-        <div className="flex items-center justify-center">Fase:</div>
-        <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 pr-5 pl-5 shadow-lg">
-                {phase}
-        </div>          
-        </div>
+            <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
+          </button>
+          <div className="absolute transform rotate-90 ml-40 flex flex-col text-white">
+            <div className="flex items-center justify-center">Fase:</div>
+            <div className="text-white font-bold text-lg bg-cyan-500 rounded-full flex justify-center items-center p-2 pr-5 pl-5 shadow-lg">
+              {phase}
+            </div>
+          </div>
         </div>
       </div>
-      
+  
+      <div className="absolute text-white left-0 top-8 flex flex-col items-center justify-center space-y-10 ">
+        <button onClick={resetGame} className="bg-red-500 transform rotate-90 rounded-md h-8 w-16">Resetar</button>
+        <button onClick={handleGameInit} className="bg-blue-500 transform rotate-90 rounded-md h-8 w-16">Iniciar</button>
+      </div>
     </div>
   );
 };
