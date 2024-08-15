@@ -39,7 +39,6 @@ const App = () => {
   const [modalMessage, setModalMessage] = useState<string>('');
   const [canAdvance, setCanAdvance] = useState<boolean>(false);
 
-  
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackdropRef = useRef<HTMLDivElement>(null);
 
@@ -145,21 +144,11 @@ const App = () => {
     } else if (buttonNumber === 2) {
       setButton2Pressed(true);
     }
-  };
-
-  const handleButtonMouseUp = (buttonNumber: number) => {
-    if (buttonNumber === 1) {
-      setButton1Pressed(false);
-    } else if (buttonNumber === 2) {
-      setButton2Pressed(false);
-    }
-    // Check if both buttons are released
-    if (!button1Pressed && !button2Pressed) {
+    // Check if both buttons are pressed
+    if (button1Pressed && button2Pressed) {
       handleAdvanceButtonClick();
     }
   };
-
-
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
       setIsModalVisible(true);
@@ -203,7 +192,6 @@ const App = () => {
     setIsModalVisible(false);
   };
 
-
   return (
     <div className="w-full h-screen bg-gray-600 flex flex-col items-center justify-center">
       {isModalVisible && (
@@ -236,7 +224,6 @@ const App = () => {
           <button
             className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
             onTouchStart={() => handleButtonMouseDown(1)}
-            onTouchEnd={() => handleButtonMouseUp(1)}
           >
             <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
           </button>
@@ -333,7 +320,6 @@ const App = () => {
           <button
             className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
             onTouchStart={() => handleButtonMouseDown(2)}
-            onTouchEnd={() => handleButtonMouseUp(2)}
           >
             <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
           </button>
