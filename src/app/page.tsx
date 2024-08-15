@@ -37,7 +37,6 @@ const App = () => {
   const [timeRemaining, setTimeRemaining] = useState<number>(5);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [modalMessage, setModalMessage] = useState<string>('');
-  const [canAdvance, setCanAdvance] = useState<boolean>(false);
 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackdropRef = useRef<HTMLDivElement>(null);
@@ -114,16 +113,8 @@ const App = () => {
     setIsAdvanceButtonActive(allLitButtonsPressed);
   }, [litButtons, pressedButtons]);
 
-  useEffect(() => {
-    if (button1Pressed && button2Pressed) {
-      setCanAdvance(true);
-    } else {
-      setCanAdvance(false);
-    }
-  }, [button1Pressed, button2Pressed]);
-
   const handleAdvanceButtonClick = () => {
-    if (canAdvance) {
+    if (button1Pressed && button2Pressed && isAdvanceButtonActive) {
       setPhase(prev => {
         const nextPhase = prev < 20 ? prev + 1 : 1;
         const count = getButtonsToLight(nextPhase);
@@ -144,10 +135,7 @@ const App = () => {
     } else if (buttonNumber === 2) {
       setButton2Pressed(true);
     }
-    // Check if both buttons are pressed
-    if (button1Pressed && button2Pressed) {
-      handleAdvanceButtonClick();
-    }
+    handleAdvanceButtonClick();
   };
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
