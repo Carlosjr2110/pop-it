@@ -37,6 +37,7 @@ const App = () => {
   const [timeRemaining, setTimeRemaining] = useState<number>(5);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [modalMessage, setModalMessage] = useState<string>('');
+  const [phaseAdvanced, setPhaseAdvanced] = useState<boolean>(false); // New state to track phase advancement
 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackdropRef = useRef<HTMLDivElement>(null);
@@ -108,13 +109,14 @@ const App = () => {
     }
   }, [phase, init]);
 
+  
   useEffect(() => {
     const allLitButtonsPressed = Array.from(litButtons).every(index => pressedButtons.has(index));
     setIsAdvanceButtonActive(allLitButtonsPressed);
   }, [litButtons, pressedButtons]);
 
   const handleAdvanceButtonClick = () => {
-    if (button1Pressed && button2Pressed && isAdvanceButtonActive) {
+    if (button1Pressed && button2Pressed && isAdvanceButtonActive && !phaseAdvanced) {
       setPhase(prev => {
         const nextPhase = prev < 20 ? prev + 1 : 1;
         const count = getButtonsToLight(nextPhase);
@@ -124,6 +126,7 @@ const App = () => {
         setPressedButtons(new Set());
         playPopitSound();
         setTimeRemaining(5);
+        setPhaseAdvanced(true); // Mark phase as advanced
         return nextPhase;
       });
     }
@@ -137,6 +140,7 @@ const App = () => {
     }
     handleAdvanceButtonClick();
   };
+
   const togglePop = (index: number) => {
     if (!litButtons.has(index)) {
       setIsModalVisible(true);
