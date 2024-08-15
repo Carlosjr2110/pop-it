@@ -25,7 +25,7 @@ const getRandomIndexes = (count: number): number[] => {
 
 const App = () => {
   const [poppedStates, setPoppedStates] = useState<boolean[]>(Array(totalButtons).fill(false));
-  const [phase, setPhase] = useState<number>(1);
+  const [phase, setPhase] = useState<number>(0);
   const [litButtons, setLitButtons] = useState<Set<number>>(new Set());
   const [pressedButtons, setPressedButtons] = useState<Set<number>>(new Set());
   const [isTopPressed, setIsTopPressed] = useState<boolean>(false);
@@ -37,7 +37,6 @@ const App = () => {
   const [timeRemaining, setTimeRemaining] = useState<number>(5);
   const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
   const [modalMessage, setModalMessage] = useState<string>('');
-  const [phaseAdvanced, setPhaseAdvanced] = useState<boolean>(false); // New state to track phase advancement
 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalBackdropRef = useRef<HTMLDivElement>(null);
@@ -58,11 +57,12 @@ const App = () => {
     setButton2Pressed(false);
     setTimeRemaining(5);
     setIsModalVisible(false);
+
   };
 
   const resetGame = () => {
     setInit(false);
-    setPhase(1);
+    setPhase(0);
     setPoppedStates(Array(totalButtons).fill(false));
     setPressedButtons(new Set());
     setLitButtons(new Set());
@@ -70,6 +70,7 @@ const App = () => {
     setButton2Pressed(false);
     setTimeRemaining(5);
     if (timerInterval) clearInterval(timerInterval);
+
   };
 
   useEffect(() => {
@@ -124,9 +125,15 @@ const App = () => {
     handleAdvanceButtonClick();
   };
 
-
+  const handleButtonMouseUp = (buttonNumber: number) => {
+    if (buttonNumber === 1) {
+      setButton1Pressed(false);
+    } else if (buttonNumber === 2) {
+      setButton2Pressed(false);
+    }
+  };
   const handleAdvanceButtonClick = () => {
-    if (button1Pressed || button2Pressed && isAdvanceButtonActive && !phaseAdvanced && init) {
+    if (init && (button1Pressed || button2Pressed) && isAdvanceButtonActive && phase > 0) {
       setPhase(prev => {
         const nextPhase = prev < 20 ? prev + 1 : 1;
         const count = getButtonsToLight(nextPhase);
@@ -136,7 +143,7 @@ const App = () => {
         setPressedButtons(new Set());
         playPopitSound();
         setTimeRemaining(5);
-        setPhaseAdvanced(true); // Mark phase as advanced
+        setIsAdvanceButtonActive(false)
         return nextPhase;
       });
     }
@@ -218,6 +225,9 @@ const App = () => {
           <button
             className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
             onTouchStart={() => handleButtonMouseDown(1)}
+            onTouchEnd={() => handleButtonMouseUp(1)}
+            onMouseDown={() => handleButtonMouseDown(1)}
+            onMouseUp={() => handleButtonMouseUp(1)}
           >
             <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
           </button>
@@ -313,8 +323,10 @@ const App = () => {
         <div className="flex relative items-center mb-8">
           <button
             className={`relative px-4 py-2 w-36 h-16 ${isAdvanceButtonActive ? 'bg-rose-400 animate-pulse' : 'bg-cyan-300'} text-white border-2 border-double ${isAdvanceButtonActive ? 'border-cyan-200' : 'border-green-500'} rounded-full shadow-lg`}
-            onTouchStart={() => handleButtonMouseDown(2)}
-          >
+            onTouchStart={() => handleButtonMouseDown(1)}
+            onTouchEnd={() => handleButtonMouseUp(1)}
+            onMouseDown={() => handleButtonMouseDown(1)}
+            onMouseUp={() => handleButtonMouseUp(1)}          >
             <div className="absolute inset-0 border-2 border-double border-cyan-200 rounded-full"></div>
           </button>
           <div className="absolute transform rotate-90 ml-40 flex flex-col text-white">
